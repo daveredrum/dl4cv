@@ -1,0 +1,9 @@
+[submodule "exercise_1"]
+	path = exercise_1
+	url = git@gitlab.lrz.de:dl4cv/exercise_1.git
+[submodule "exercise_2"]
+	path = exercise_2
+	url = git@gitlab.lrz.de:dl4cv/exercise_2.git
+[submodule "exercise_3"]
+	path = exercise_3
+	url = git@gitlab.lrz.de:dl4cv/exercise_3.git
