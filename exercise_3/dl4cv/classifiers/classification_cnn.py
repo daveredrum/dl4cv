@@ -53,16 +53,29 @@ class ClassificationCNN(nn.Module):
         # Note: Avoid using any of PyTorch's random functions or your output   #
         # will not coincide with the Jupyter notebook cell.                    #
         ########################################################################
-        padding = ((height - 1) * stride_conv + kernel_size - height) // 2
+        padding_1 = ((height - 1) * stride_conv + kernel_size - height) // 2
+        self.conv1 = nn.Conv2d(channels, num_filters, kernel_size, stride=stride_conv, padding=padding_1)
+        self.conv1.weight.data.mul_(weight_scale)
+        self.pool1 = nn.MaxPool2d(pool, stride_pool)
+        feat_size_1 = height // pool
 
-        self.conv = nn.Conv2d(channels, num_filters, kernel_size, stride=stride_conv, padding=padding)
-        self.conv.weight.data.mul_(weight_scale)
+        padding_2 = ((feat_size_1 - 1) * stride_conv + kernel_size - feat_size_1) // 2
+        self.conv2 = nn.Conv2d(num_filters, 2 * num_filters, kernel_size, stride=stride_conv, padding=padding_2)
+        self.conv2.weight.data.mul_(weight_scale)
+        self.pool2 = nn.MaxPool2d(pool, stride_pool)
+        feat_size_2 = feat_size_1 // pool
 
-        self.pool = nn.MaxPool2d(pool, stride_pool)
+        padding_3 = ((feat_size_2 - 1) * stride_conv + kernel_size - feat_size_2) // 2
+        self.conv3 = nn.Conv2d(2 * num_filters, 4 * num_filters, kernel_size, stride=stride_conv, padding=padding_2)
+        self.conv3.weight.data.mul_(weight_scale)
+        self.pool3 = nn.MaxPool2d(pool, stride_pool)
+        feat_size_3 = feat_size_2 // pool
+        
         self.dropout = nn.Dropout(p=dropout)
-        feat_size = height // pool
-        self.fc1 = nn.Linear(num_filters * feat_size * feat_size, hidden_dim)
-        self.fc2 = nn.Linear(hidden_dim, num_classes)
+
+        self.fc1 = nn.Linear(4 * num_filters * feat_size_3 * feat_size_3, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc3 = nn.Linear(hidden_dim, num_classes)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -83,11 +96,17 @@ class ClassificationCNN(nn.Module):
         # transition from the spatial input image to the flat fully connected  #
         # layers.                                                              #
         ########################################################################
-        x = F.relu(self.conv(x))
-        x = self.pool(x).view(x.size(0), -1)
+        x = F.relu(self.conv1(x))
+        x = self.pool1(x)
+        x = F.relu(self.conv2(x))
+        x = self.pool2(x)
+        x = F.relu(self.conv3(x))
+        x = self.pool3(x).view(x.size(0), -1)
         x = self.dropout(self.fc1(x))
         x = F.relu(x)
-        x = self.fc2(x)
+        x = self.dropout(self.fc2(x))
+        x = F.relu(x)
+        x = self.fc3(x)
         ########################################################################
         #                             END OF YOUR CODE                         #
         ########################################################################
